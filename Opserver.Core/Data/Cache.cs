@@ -104,7 +104,7 @@ namespace StackExchange.Opserver.Data
                 Interlocked.Decrement(ref PollingEngine._activePolls);
             }
             return Data;
-        }
+        }   
 
         private string miniProfilerDescription { get; }
 

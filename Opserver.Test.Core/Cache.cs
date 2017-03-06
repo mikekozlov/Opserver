@@ -1,23 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Authentication;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using NLog;
+﻿// ReSharper disable All
 
 namespace Opserver.Test.Core
 {
+    using System;
+    using System.Diagnostics;
+    using System.Threading;
+    using System.Threading.Tasks;
+
     public class Cache<T> : Cache where T : class, new()
     {
         private int _hasData;
 
         private Func<Task<T>> _updateCache;
 
+        private readonly SemaphoreSlim _pollSemaphoreSlim = new SemaphoreSlim(1);
+
+        public TimeSpan? LastPollDuration { get; internal set; }
+
         public T Data { get; set; }
 
         public Task<T> DataTask { get; set; }
+        public Stopwatch CurrentPollDuration { get; protected set; }
 
 
         public Cache(string key, Func<Task<T>> getData)
@@ -27,49 +30,101 @@ namespace Opserver.Test.Core
             _updateCache = async ()
              =>
             {
-                Current.Logger.Trace($"Update Cache [{Key}] Started.");
+                Data = await getData();
 
-                var data = await getData();
-
-                IsStale = false;
-                IsPolling = false;
-
-                Current.Logger.Trace($"Update Cache [{Key}] Completed.");
-
-                return data;
+                return Data;
             };
         }
 
-        public void Update()
+        public async Task<T> UpdateAsync(bool force = false)
         {
+            Current.Logger.Trace($"Update Cache [{Key}] Started.");
+
+            if (!force && !IsStale) return Data;
+
+            Interlocked.Increment(ref PollEngine._activePolls);
+
+            PollStatus = "Awaiting Semaphore";
+            await _pollSemaphoreSlim.WaitAsync();
+            bool errored = false;
+
             try
             {
-                DataTask = _updateCache();
+                if (!force && !IsStale) return Data;
+                if (IsPolling) return Data;
+                CurrentPollDuration = Stopwatch.StartNew();
+                _isPolling = true;
+
+                PollStatus = "Update Cache";
+
+                await _updateCache();
+
+                PollStatus = "Update Cache Complete";
+                Interlocked.Increment(ref _pollsTotal);
 
             }
             catch (Exception ex)
             {
                 Current.Logger.Error(ex, $"Update Cache [{Key}] Failed.");
+                errored = true;
             }
+            finally
+            {
+                if (CurrentPollDuration != null)
+                {
+                    CurrentPollDuration.Stop();
+                    LastPollDuration = CurrentPollDuration.Elapsed;
+                    Current.Logger.Trace($"Update Cache [{Key}] Completed. Duration: {LastPollDuration}");
+                }
+
+                CurrentPollDuration = null;
+                _isPolling = false;
+                PollStatus = errored ? "Failed" : "Completed";
+
+                _pollSemaphoreSlim.Release();
+                Interlocked.Decrement(ref PollEngine._activePolls);
+            }
+
+            return Data;
         }
 
-        public Task<int> PollAsync(bool force = false)
+        public Task<T> PollAsync(bool force = false)
         {
             if (force || (_hasData == 0 && Interlocked.CompareExchange(ref _hasData, 1, 0) == 0))
             {
-                
+                 DataTask = UpdateAsync();
             }
 
+            if (IsStale)
+            {
+                return UpdateAsync().ContinueWith(
+                    _ =>
+                        {
+                            DataTask = _;
+                            return _.GetAwaiter().GetResult();
+                        },
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
+            }
+
+            return DataTask;
         }
     }
 
     public abstract class Cache
     {
+        protected bool _isPolling;
+
+        protected int _pollsTotal;
+
         public string Key { get; set; }
 
         public bool IsStale { get; set; }
 
-        public bool IsPolling { get; set; }
+        public bool IsPolling => _isPolling;
+
+        public int PollsTotal => _pollsTotal;
 
         public string PollStatus { get; set; }
     }
