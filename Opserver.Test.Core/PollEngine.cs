@@ -80,6 +80,8 @@ namespace Opserver.Test.Core
 
         public static void PollAndForget()
         {
+
+
         }
 
         public static void Stop()

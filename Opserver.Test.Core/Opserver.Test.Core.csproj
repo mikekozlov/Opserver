@@ -47,6 +47,7 @@
     <Compile Include="Cache.cs" />
     <Compile Include="Current.cs" />
     <Compile Include="PollEngine.cs" />
+    <Compile Include="PollNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
