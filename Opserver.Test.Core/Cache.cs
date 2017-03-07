@@ -67,8 +67,17 @@ namespace Opserver.Test.Core
 
             try
             {
-                if (!force && !IsStale) return Data;
-                if (IsPolling) return Data;
+                if (!force && !IsStale)
+                {
+                    Current.Logger.Trace($"Update Cache [{Key}] Not Stale Yet.");
+                    return Data;
+                }
+                if (IsPolling)
+                {
+                    Current.Logger.Trace($"Update Cache [{Key}] Already Polling.");
+
+                    return Data;
+                }
                 CurrentPollDuration = Stopwatch.StartNew();
                 _isPolling = true;
 
@@ -91,7 +100,7 @@ namespace Opserver.Test.Core
                 {
                     CurrentPollDuration.Stop();
                     LastPollDuration = CurrentPollDuration.Elapsed;
-                    Current.Logger.Trace($"Update Cache [{Key}] Completed. Duration: {LastPollDuration}");
+                    Current.Logger.Trace($"Update Cache [{Key}] Completed. Duration: {LastPollDuration}, Next Poll: {NextPoll.ToLongDateString()}");
                 }
 
                 CurrentPollDuration = null;

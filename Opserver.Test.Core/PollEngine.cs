@@ -76,12 +76,14 @@ namespace Opserver.Test.Core
             while (!_shuttingDown)
             {
                 PollAndForget();
-                Thread.Sleep(1000);
+                Thread.Sleep(3000);
             }
         }
 
         private static void PollAndForget()
         {
+            Current.Logger.Trace("Global polling started");
+
             foreach (var pollNode in _pollsNodes.Where(p=>p.IsPolling == false ))
             {
                 pollNode.PollAsync().ContinueWith(t =>

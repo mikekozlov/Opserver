@@ -24,9 +24,13 @@ namespace Opserver.Test.Console
 
             PollEngine.TryAdd(sqlNode);
 
-            Thread.Sleep(10000);
 
-            var candidates = sqlNode.Candidates.Data;
+            //while (true)
+            //{
+            //    Thread.Sleep(10000);
+
+            //    Console.WriteLine(sqlNode.Candidates.Data?.Count());
+            //}
 
             Console.ReadKey();
         }

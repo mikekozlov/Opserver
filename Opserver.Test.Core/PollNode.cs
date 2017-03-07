@@ -44,6 +44,8 @@ namespace Opserver.Test.Core
             if (Interlocked.CompareExchange(ref _isPolling, 1, 0) == 1)
             {
                 // already started poll by another thread
+                Current.Logger.Trace($"Node Poll [{Key}] Already Polling.");
+
                 return;
             }
 
