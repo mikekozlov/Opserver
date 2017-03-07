@@ -21,6 +21,14 @@ namespace Opserver.Test.Core
 
         public Stopwatch CurrentPollDuration { get; protected set; }
 
+        public bool IsPolling
+        {
+            get
+            {
+                return _isPolling == 1;
+            }
+        }
+
         public PollNode(string key)
         {
             Key = key;

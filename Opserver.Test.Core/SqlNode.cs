@@ -66,13 +66,11 @@ namespace Opserver.Test.Core
                    async connection =>
                        {
                            IEnumerable<Candidate> candidates =
-                               await
-                                   SqlMapper.QueryAsync<Candidate>(
-                                       connection,
+                               await connection.QueryAsync<Candidate>(
                                        "SELECT distinct top 10\r\n\tContactId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Contact");
                            return candidates;
                        },
-                   ExtensionMethods.Seconds(5)));
+                   5.Seconds()));
 
         public Cache<IEnumerable<Contact>> Contacts
             => _contacts?? ( _contacts = GetSqlCache(
@@ -87,6 +85,6 @@ namespace Opserver.Test.Core
                                    "SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate");
                        return contacts;
                    },
-                   ExtensionMethods.Seconds(5)));
+                   5.Seconds()));
     }
 }

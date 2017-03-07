@@ -6,6 +6,7 @@ namespace Opserver.Test.Core
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -81,7 +82,7 @@ namespace Opserver.Test.Core
 
         private static void PollAndForget()
         {
-            foreach (var pollNode in _pollsNodes)
+            foreach (var pollNode in _pollsNodes.Where(p=>p.IsPolling == false ))
             {
                 pollNode.PollAsync().ContinueWith(t =>
                 {

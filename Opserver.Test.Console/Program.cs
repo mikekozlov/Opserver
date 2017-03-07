@@ -28,8 +28,6 @@ namespace Opserver.Test.Console
 
             var candidates = sqlNode.Candidates.Data;
 
-            //Thread.Sleep(5000);
-
             Console.ReadKey();
         }
     }
