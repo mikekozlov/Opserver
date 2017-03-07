@@ -4,11 +4,18 @@ namespace Opserver.Test.Core
 {
     using System;
     using System.Diagnostics;
+    using System.Runtime.Remoting.Metadata.W3cXsd2001;
     using System.Threading;
     using System.Threading.Tasks;
 
     public class Cache<T> : Cache where T : class
     {
+        private readonly TimeSpan? duration;
+
+        public const int _refreshInterval = 3;
+
+        public string Description { get; set; }
+
         private int _hasData;
 
         private Func<Task<T>> _updateCache;
@@ -17,14 +24,24 @@ namespace Opserver.Test.Core
 
         public TimeSpan? LastPollDuration { get; internal set; }
 
+        public override bool IsStale
+        {
+            get
+            {
+                return NextPoll < DateTime.UtcNow;
+            }
+        }
+
         public T Data { get; set; }
 
         public Task<T> DataTask { get; set; }
+
         public Stopwatch CurrentPollDuration { get; protected set; }
 
-
-        public Cache(string key, Func<Task<T>> getData)
+        public Cache(string key, string description, Func<Task<T>> getData, TimeSpan duration)
         {
+            this.duration = duration;
+            Description = description;
             Key = key;
 
             _updateCache = async ()
@@ -61,7 +78,7 @@ namespace Opserver.Test.Core
 
                 PollStatus = "Update Cache Complete";
                 Interlocked.Increment(ref _pollsTotal);
-
+                NextPoll = DateTime.UtcNow.Add(duration ?? TimeSpan.FromSeconds(_refreshInterval));
             }
             catch (Exception ex)
             {
@@ -125,13 +142,17 @@ namespace Opserver.Test.Core
 
         public string Key { get; set; }
 
-        public bool IsStale { get; set; }
+        public abstract bool IsStale { get;}
+
+        public DateTime NextPoll { get; protected set; }
 
         public bool IsPolling => _isPolling;
 
         public int PollsTotal => _pollsTotal;
 
         public string PollStatus { get; set; }
+
+        public int RefreshInterval { get; set; }
 
         public abstract Task PollGenericAsync(bool force = false);
     }
