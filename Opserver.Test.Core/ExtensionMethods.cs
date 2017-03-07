@@ -10,7 +10,16 @@
     using System.Threading.Tasks;
     using Dapper;
 
-    public static class ExtensionMethods
+    public static partial class ExtensionMethods
+    {
+        // TODO: Convert these to TicksPerSecond constructor, faster.
+        public static TimeSpan Seconds(this int seconds) => TimeSpan.FromSeconds(seconds);
+        public static TimeSpan Minutes(this int minutes) => TimeSpan.FromMinutes(minutes);
+        public static TimeSpan Hours(this int hours) => TimeSpan.FromHours(hours);
+        public static TimeSpan Days(this int days) => TimeSpan.FromDays(days);
+    }
+
+    public static partial class ExtensionMethods
     {
         /// <summary>
         /// Obtains the data as a list; if it is *already* a list, the original object is returned 

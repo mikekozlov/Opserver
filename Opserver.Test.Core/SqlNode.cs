@@ -8,10 +8,19 @@ namespace Opserver.Test.Core
     using System.Runtime.InteropServices;
     using System.Threading.Tasks;
 
+    using Dapper;
+
     using Opserver.Test.Core.Models;
+
+    using StackExchange.Opserver.Helpers;
 
     class SqlNode : PollNode
     {
+        private Cache<IEnumerable<Contact>> _contacts;
+
+        private Cache<IEnumerable<Candidate>> _candidates;
+
+
         public string ConnectionString { get; set; }
 
         public const int _refreshInterval = 3;
@@ -32,7 +41,7 @@ namespace Opserver.Test.Core
             }
         }
 
-        public Cache GetSqlCache<T>(string key, string description, Func<DbConnection,Task<T>> get, TimeSpan? cacheDuration) where T : class
+        public Cache<T> GetSqlCache<T>(string key, string description, Func<DbConnection,Task<T>> get, TimeSpan? cacheDuration) where T : class
         {
             //todo mk add miniprofiler later to monitor how long the sql operation
 
@@ -50,8 +59,34 @@ namespace Opserver.Test.Core
 
         protected Task<DbConnection> GetConnectionAsync(int timeout = 5000) => Connection.GetOpenAsync(ConnectionString, connectionTimeout: timeout);
 
-        public Cache<IEnumerable<Candidate>> Candidates { get; set; }
+        public Cache<IEnumerable<Candidate>> Candidates
+            => _candidates?? ( _candidates = GetSqlCache(
+                   nameof(Candidate),
+                   "Fetch Candidates",
+                   async connection =>
+                       {
+                           IEnumerable<Candidate> candidates =
+                               await
+                                   SqlMapper.QueryAsync<Candidate>(
+                                       connection,
+                                       "SELECT distinct top 10\r\n\tContactId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Contact");
+                           return candidates;
+                       },
+                   ExtensionMethods.Seconds(5)));
 
-        public Cache<IEnumerable<Contact>> Contacts { get; set; }
+        public Cache<IEnumerable<Contact>> Contacts
+            => _contacts?? ( _contacts = GetSqlCache(
+                   nameof(Contact),
+                   "Fetch Candidates",
+                   async connection =>
+                   {
+                       IEnumerable<Contact> contacts =
+                           await
+                               SqlMapper.QueryAsync<Contact>(
+                                   connection,
+                                   "SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate");
+                       return contacts;
+                   },
+                   ExtensionMethods.Seconds(5)));
     }
 }
