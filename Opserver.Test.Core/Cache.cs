@@ -7,7 +7,7 @@ namespace Opserver.Test.Core
     using System.Threading;
     using System.Threading.Tasks;
 
-    public class Cache<T> : Cache where T : class, new()
+    public class Cache<T> : Cache where T : class
     {
         private int _hasData;
 
@@ -110,6 +110,11 @@ namespace Opserver.Test.Core
 
             return DataTask;
         }
+
+        public override Task PollGenericAsync(bool force = false)
+        {
+            return PollAsync(force);
+        }
     }
 
     public abstract class Cache
@@ -127,5 +132,7 @@ namespace Opserver.Test.Core
         public int PollsTotal => _pollsTotal;
 
         public string PollStatus { get; set; }
+
+        public abstract Task PollGenericAsync(bool force = false);
     }
 }
