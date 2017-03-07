@@ -84,10 +84,12 @@ namespace Opserver.Test.Core
         {
             Current.Logger.Trace("Global polling started");
 
-            foreach (var pollNode in _pollsNodes.Where(p=>p.IsPolling == false ))
+            foreach (var pollNode in _pollsNodes)
             {
                 pollNode.PollAsync().ContinueWith(t =>
                 {
+                    Current.Logger.Trace($"Trace [{t.Id}] completed. Status:{t.Status}");
+
                     if (t.IsFaulted) Current.Logger.Error(t.Exception);
                 },
                         CancellationToken.None,

@@ -26,10 +26,7 @@ namespace Opserver.Test.Core
 
         public override bool IsStale
         {
-            get
-            {
-                return NextPoll < DateTime.UtcNow;
-            }
+            get { return (NextPoll ?? DateTime.MinValue) < DateTime.UtcNow; }
         }
 
         public T Data { get; set; }
@@ -55,9 +52,13 @@ namespace Opserver.Test.Core
 
         public async Task<T> UpdateAsync(bool force = false)
         {
-            Current.Logger.Trace($"Update Cache [{Key}] Started.");
+            Current.Logger.Trace($"Update Cache [{Key}] Started. {DateTime.UtcNow.ToLongTimeString()}");
 
-            if (!force && !IsStale) return Data;
+            if (!force && !IsStale)
+            {
+                Current.Logger.Trace($"Update Cache [{Key}] Not Stale Yet.");
+                return Data;
+            }
 
             Interlocked.Increment(ref PollEngine._activePolls);
 
@@ -100,7 +101,7 @@ namespace Opserver.Test.Core
                 {
                     CurrentPollDuration.Stop();
                     LastPollDuration = CurrentPollDuration.Elapsed;
-                    Current.Logger.Trace($"Update Cache [{Key}] Completed. Duration: {LastPollDuration}, Next Poll: {NextPoll.ToLongDateString()}");
+                    Current.Logger.Trace($"Update Cache [{Key}] Completed. Duration: {LastPollDuration}, Next Poll: {NextPoll.Value.ToLongTimeString()}");
                 }
 
                 CurrentPollDuration = null;
@@ -114,32 +115,22 @@ namespace Opserver.Test.Core
             return Data;
         }
 
-        public Task<T> PollAsync(bool force = false)
+        public async Task PollAsync(bool force = false)
         {
+            if (IsPolling)
+                return ;
+
             if (force || (_hasData == 0 && Interlocked.CompareExchange(ref _hasData, 1, 0) == 0))
             {
-                 DataTask = UpdateAsync();
+                 await UpdateAsync();
             }
 
-            if (IsStale)
-            {
-                return UpdateAsync().ContinueWith(
-                    _ =>
-                        {
-                            DataTask = _;
-                            return _.GetAwaiter().GetResult();
-                        },
-                    CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously,
-                    TaskScheduler.Default);
-            }
-
-            return DataTask;
+            await UpdateAsync();
         }
 
-        public override Task PollGenericAsync(bool force = false)
+        public async override Task PollGenericAsync(bool force = false)
         {
-            return PollAsync(force);
+            await PollAsync(force);
         }
     }
 
@@ -153,7 +144,7 @@ namespace Opserver.Test.Core
 
         public abstract bool IsStale { get;}
 
-        public DateTime NextPoll { get; protected set; }
+        public DateTime? NextPoll { get; protected set; }
 
         public bool IsPolling => _isPolling;
 

@@ -45,7 +45,6 @@ namespace Opserver.Test.Core
             {
                 // already started poll by another thread
                 Current.Logger.Trace($"Node Poll [{Key}] Already Polling.");
-
                 return;
             }
 
@@ -56,13 +55,15 @@ namespace Opserver.Test.Core
                 CurrentPollDuration.Start();
 
                 var tasks = new List<Task>();
-                foreach (var dataPoller in DataPollers.Where(p => !p.IsPolling && p.IsStale))
-                    tasks.Add(dataPoller.PollGenericAsync());
+                Parallel.ForEach(DataPollers, (dataPoller) => tasks.Add(dataPoller.PollGenericAsync()));
+
+                //foreach (var dataPoller in DataPollers)
+                //    tasks.Add(dataPoller.PollGenericAsync());
 
                 if (!tasks.Any())
                     return;
 
-                Task.WaitAll(tasks.ToArray());
+                await Task.WhenAll(tasks.ToArray());
                 Current.Logger.Trace($"Node Poll [{Key}] Completed.");
             }
             catch (Exception ex)
