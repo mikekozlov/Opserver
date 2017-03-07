@@ -46,7 +46,7 @@ namespace Opserver.Test.Core
                 CurrentPollDuration.Start();
 
                 var tasks = new List<Task>();
-                foreach (var dataPoller in DataPollers.Where(p => !p.IsPolling))
+                foreach (var dataPoller in DataPollers.Where(p => !p.IsPolling && p.IsStale))
                     tasks.Add(dataPoller.PollGenericAsync());
 
                 if (!tasks.Any())

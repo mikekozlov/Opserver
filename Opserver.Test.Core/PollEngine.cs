@@ -7,6 +7,7 @@ namespace Opserver.Test.Core
     using System.Collections;
     using System.Collections.Generic;
     using System.Threading;
+    using System.Threading.Tasks;
 
     public static class PollEngine
     {
@@ -18,12 +19,12 @@ namespace Opserver.Test.Core
 
         private static bool _shuttingDown;
 
-        private static HashSet<PollNode> _polls = new HashSet<PollNode>();
+        private static HashSet<PollNode> _pollsNodes = new HashSet<PollNode>();
 
 
         public static bool TryAdd(PollNode node)
         {
-            return _polls.Add(node);
+            return _pollsNodes.Add(node);
         }
 
         static PollEngine()
@@ -71,23 +72,30 @@ namespace Opserver.Test.Core
 
         private static void StartPollLoop()
         {
-            while (_shuttingDown)
+            while (!_shuttingDown)
             {
                 PollAndForget();
                 Thread.Sleep(1000);
             }
         }
 
-        public static void PollAndForget()
+        private static void PollAndForget()
         {
-
-
+            foreach (var pollNode in _pollsNodes)
+            {
+                pollNode.PollAsync().ContinueWith(t =>
+                {
+                    if (t.IsFaulted) Current.Logger.Error(t.Exception);
+                },
+                        CancellationToken.None,
+                        TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
+            }
         }
 
         public static void Stop()
         {
             _shuttingDown = false;   
         }
-
     }
 }

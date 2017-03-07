@@ -14,7 +14,7 @@ namespace Opserver.Test.Core
 
     using StackExchange.Opserver.Helpers;
 
-    class SqlNode : PollNode
+    public class SqlNode : PollNode
     {
         private Cache<IEnumerable<Contact>> _contacts;
 
@@ -77,7 +77,7 @@ namespace Opserver.Test.Core
         public Cache<IEnumerable<Contact>> Contacts
             => _contacts?? ( _contacts = GetSqlCache(
                    nameof(Contact),
-                   "Fetch Candidates",
+                   "Fetch Contacts",
                    async connection =>
                    {
                        IEnumerable<Contact> contacts =
