@@ -12,6 +12,8 @@ namespace Opserver.Test.Core
     {
         private readonly TimeSpan? duration;
 
+        private readonly int hitCountLimit;
+
         public const int _refreshInterval = 3;
 
         public string Description { get; set; }
@@ -38,6 +40,9 @@ namespace Opserver.Test.Core
                 // think about locking here
                 if (_data == null)
                     UpdateAsync().Wait();
+
+                Interlocked.Increment(ref this._hitCount);
+
                 return _data;
             }
         }
@@ -46,9 +51,10 @@ namespace Opserver.Test.Core
 
         public Stopwatch CurrentPollDuration { get; protected set; }
 
-        public Cache(string key, string description, Func<Task<T>> getData, TimeSpan duration)
+        public Cache(string key, string description, Func<Task<T>> getData, TimeSpan duration, int hitCountLimit = 10)
         {
             this.duration = duration;
+            this.hitCountLimit = hitCountLimit;
             Description = description;
             Key = key;
 
@@ -57,7 +63,7 @@ namespace Opserver.Test.Core
             {
                 _data = await getData();
 
-                return Data;
+                return _data;
             };
         }
 
@@ -68,7 +74,7 @@ namespace Opserver.Test.Core
             if (!force && !IsStale)
             {
                 Current.Logger.Trace($"Update Cache [{Key}] Not Stale Yet.");
-                return Data;
+                return _data;
             }
 
             Interlocked.Increment(ref PollEngine._activePolls);
@@ -82,13 +88,13 @@ namespace Opserver.Test.Core
                 if (!force && !IsStale)
                 {
                     Current.Logger.Trace($"Update Cache [{Key}] Not Stale Yet.");
-                    return Data;
+                    return _data;
                 }
                 if (IsPolling)
                 {
                     Current.Logger.Trace($"Update Cache [{Key}] Already Polling.");
 
-                    return Data;
+                    return _data;
                 }
                 CurrentPollDuration = Stopwatch.StartNew();
                 _isPolling = true;
@@ -123,7 +129,7 @@ namespace Opserver.Test.Core
                 Interlocked.Decrement(ref PollEngine._activePolls);
             }
 
-            return Data;
+            return _data;
         }
 
         public async Task PollAsync(bool force = false)
@@ -151,6 +157,8 @@ namespace Opserver.Test.Core
 
         protected int _pollsTotal;
 
+        protected int _hitCount;
+
         public string Key { get; set; }
 
         public abstract bool IsStale { get;}
@@ -158,6 +166,8 @@ namespace Opserver.Test.Core
         public DateTime? NextPoll { get; protected set; }
 
         public bool IsPolling => _isPolling;
+
+        public int HitCount => _hitCount;
 
         public int PollsTotal => _pollsTotal;
 

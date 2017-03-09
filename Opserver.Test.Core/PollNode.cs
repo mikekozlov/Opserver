@@ -3,6 +3,7 @@
 namespace Opserver.Test.Core
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -18,6 +19,8 @@ namespace Opserver.Test.Core
         public string Status { get; set; }
 
         public abstract IEnumerable<Cache> DataPollers { get; }
+
+        public abstract IEnumerable<Cache> CachePollers { get; }
 
         public Stopwatch CurrentPollDuration { get; protected set; }
 
@@ -54,11 +57,12 @@ namespace Opserver.Test.Core
                 CurrentPollDuration = new Stopwatch();
                 CurrentPollDuration.Start();
 
-                var tasks = new List<Task>();
-                Parallel.ForEach(DataPollers, (dataPoller) => tasks.Add(dataPoller.PollGenericAsync()));
 
-                //foreach (var dataPoller in DataPollers)
-                //    tasks.Add(dataPoller.PollGenericAsync());
+                // tasks are executed immediatelly when added, possibly because of async methods inside.
+                var tasks = new List<Task>();
+                Parallel.ForEach(DataPollers, (poller) => tasks.Add(poller.PollGenericAsync()));
+
+                Parallel.ForEach(CachePollers, (poller) => tasks.Add(poller.PollGenericAsync()));
 
                 if (!tasks.Any())
                     return;
