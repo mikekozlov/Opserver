@@ -67,12 +67,12 @@ namespace Opserver.Test.Core
                        {
                            IEnumerable<Candidate> candidates =
                                await connection.QueryAsync<Candidate>(
-                                       "WAITFOR DELAY '00:00:02';  SELECT distinct top 10\r\n\tContactId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Contact");
+                                       "SELECT distinct top 10\r\n\tContactId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Contact ORDER BY ContactId");
 
 
                            return candidates;
                        },
-                   20.Seconds()));
+                   5.Seconds()));
 
         public Cache<IEnumerable<Contact>> Contacts
             => _contacts?? ( _contacts = GetSqlCache(
@@ -84,9 +84,9 @@ namespace Opserver.Test.Core
                            await
                                SqlMapper.QueryAsync<Contact>(
                                    connection,
-                                   "WAITFOR DELAY '00:00:02'; SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate");
+                                   "SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate");
                        return contacts;
                    },
-                   20.Seconds()));
+                   5.Seconds()));
     }
 }

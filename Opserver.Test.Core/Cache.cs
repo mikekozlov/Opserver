@@ -29,7 +29,18 @@ namespace Opserver.Test.Core
             get { return (NextPoll ?? DateTime.MinValue) < DateTime.UtcNow; }
         }
 
-        public T Data { get; set; }
+        private T _data;
+
+        public T Data
+        {
+            get
+            {
+                // think about locking here
+                if (_data == null)
+                    UpdateAsync().Wait();
+                return _data;
+            }
+        }
 
         public Task<T> DataTask { get; set; }
 
@@ -44,7 +55,7 @@ namespace Opserver.Test.Core
             _updateCache = async ()
              =>
             {
-                Data = await getData();
+                _data = await getData();
 
                 return Data;
             };

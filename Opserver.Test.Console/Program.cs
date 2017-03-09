@@ -24,15 +24,15 @@ namespace Opserver.Test.Console
 
             PollEngine.TryAdd(sqlNode);
 
+            var candidates = sqlNode.Candidates.Data;
 
-            //while (true)
-            //{
-            //    Thread.Sleep(10000);
 
-            //    Console.WriteLine(sqlNode.Candidates.Data?.Count());
-            //}
+            while (true)
+            {
+                Thread.Sleep(3000);
 
-            Console.ReadKey();
+                Console.WriteLine(sqlNode.Candidates.Data.First().FullName);
+            }
         }
     }
 }
