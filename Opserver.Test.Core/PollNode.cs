@@ -59,6 +59,8 @@ namespace Opserver.Test.Core
 
 
                 // tasks are executed immediatelly when added, possibly because of async methods inside.
+                // yes because of async methods.
+                // try to simulate on 
                 var tasks = new List<Task>();
                 Parallel.ForEach(DataPollers, (poller) => tasks.Add(poller.PollGenericAsync()));
 
