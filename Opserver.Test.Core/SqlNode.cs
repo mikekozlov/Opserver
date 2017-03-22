@@ -63,7 +63,7 @@ namespace Opserver.Test.Core
         }
 
         // think on better naming later
-        public Cache<T> GetSqlCacheExt<T>(string key, string description, Func<DbConnection, Task<T>> get, TimeSpan? cacheDuration, int hitCount) where T : class
+        public Cache<T> GetSqlCacheExt<T>(string key, string description, Func<DbConnection, Task<T>> get, TimeSpan? cacheDuration, int hitCountLimit) where T : class
         {
             //todo mk add miniprofiler later to monitor how long the sql operation
             var cache = new Cache<T>(key, description,
@@ -76,7 +76,7 @@ namespace Opserver.Test.Core
                        }
 
                 , cacheDuration ?? TimeSpan.FromSeconds(_refreshInterval)
-                , hitCount);
+                , hitCountLimit);
 
             var item =  _cachePollers.GetOrAdd(key, cache);
             return item as Cache<T>;

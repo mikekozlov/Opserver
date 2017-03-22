@@ -62,7 +62,7 @@ namespace Opserver.Test.Core
                 // yes because of async methods.
                 // try to simulate on 
                 var tasks = new List<Task>();
-                Parallel.ForEach(DataPollers, (poller) => tasks.Add(poller.PollGenericAsync()));
+                //Parallel.ForEach(DataPollers, (poller) => tasks.Add(poller.PollGenericAsync()));
 
                 Parallel.ForEach(CachePollers, (poller) => tasks.Add(poller.PollGenericAsync()));
 

@@ -76,7 +76,7 @@ namespace Opserver.Test.Core
             while (!_shuttingDown)
             {
                 PollAndForget();
-                Thread.Sleep(3000);
+                Thread.Sleep(2000);
             }
         }
 
@@ -88,8 +88,6 @@ namespace Opserver.Test.Core
             {
                 pollNode.PollAsync().ContinueWith(t =>
                 {
-                    Current.Logger.Trace($"Trace [{t.Id}] completed. Status:{t.Status}");
-
                     if (t.IsFaulted) Current.Logger.Error(t.Exception);
                 },
                         CancellationToken.None,
