@@ -8,13 +8,15 @@ namespace Opserver.Test.Core
     using System.Threading;
     using System.Threading.Tasks;
 
+    using StackExchange.Opserver.Helpers;
+
     public class Cache<T> : Cache where T : class
     {
-        private readonly TimeSpan? duration;
+        private readonly TimeSpan? _duration;
 
-        private readonly int hitCountLimit;
+        private readonly int _hitCountLimit;
 
-        public const int _refreshInterval = 3;
+        public const int _refreshInterval = 8;
 
         public string Description { get; set; }
 
@@ -53,8 +55,8 @@ namespace Opserver.Test.Core
 
         public Cache(string key, string description, Func<Task<T>> getData, TimeSpan duration, int hitCountLimit = 10)
         {
-            this.duration = duration;
-            this.hitCountLimit = hitCountLimit;
+            this._duration = duration;
+            this._hitCountLimit = hitCountLimit;
             Description = description;
             Key = key;
 
@@ -69,15 +71,17 @@ namespace Opserver.Test.Core
 
         public async Task<T> UpdateAsync(bool force = false)
         {
-            Current.Logger.Trace($"Update Cache [{Key}] Started. {DateTime.UtcNow.ToLongTimeString()}");
+            var now = DateTime.UtcNow.ToLongTimeString(); 
+            //Current.Logger.Trace($"Update Cache [{Key}] Started. {DateTime.UtcNow.ToLongTimeString()}");
 
             if (!force && !IsStale)
             {
-                Current.Logger.Trace($"Update Cache [{Key}] Not Stale Yet.");
+                //Current.Logger.Trace($"Update Cache [{Key}]. Not Stale Yet. Next Poll At: {NextPoll.Value.ToLongTimeString()}");
                 return _data;
             }
 
-            await Task.Delay(millisecondsDelay: 3000);
+            // fake, to do some delay
+            //await Task.Delay(millisecondsDelay: 15000);
 
             Interlocked.Increment(ref PollEngine._activePolls);
 
@@ -89,12 +93,12 @@ namespace Opserver.Test.Core
             {
                 if (!force && !IsStale)
                 {
-                    Current.Logger.Trace($"Update Cache [{Key}] Not Stale Yet.");
+                   // Current.Logger.Trace($"Update Cache [{Key}] Not Stale Yet.After Semaphor Next Poll At: {NextPoll.Value.ToLongTimeString()}");
                     return _data;
                 }
                 if (IsPolling)
                 {
-                    Current.Logger.Trace($"Update Cache [{Key}] Already Polling.");
+                    // Current.Logger.Trace($"Update Cache [{Key}] Already Polling.");
 
                     return _data;
                 }
@@ -103,11 +107,11 @@ namespace Opserver.Test.Core
 
                 PollStatus = "Update Cache";
 
-                await _updateCache();
+                var result = await _updateCache();
 
                 PollStatus = "Update Cache Complete";
                 Interlocked.Increment(ref _pollsTotal);
-                NextPoll = DateTime.UtcNow.Add(duration ?? TimeSpan.FromSeconds(_refreshInterval));
+                NextPoll = DateTime.UtcNow.Add(_duration ?? _refreshInterval.Seconds());
             }
             catch (Exception ex)
             {
@@ -120,7 +124,7 @@ namespace Opserver.Test.Core
                 {
                     CurrentPollDuration.Stop();
                     LastPollDuration = CurrentPollDuration.Elapsed;
-                    Current.Logger.Trace($"Update Cache [{Key}] Completed. Duration: {LastPollDuration}, Next Poll: {NextPoll.Value.ToLongTimeString()}");
+                    Current.Logger.Trace($"Update Cache [{Key}] Completed. Start: {now} Duration: {LastPollDuration}, Next Poll: {NextPoll.Value.ToLongTimeString()}");
                 }
 
                 CurrentPollDuration = null;
@@ -130,13 +134,11 @@ namespace Opserver.Test.Core
                 _pollSemaphoreSlim.Release();
                 Interlocked.Decrement(ref PollEngine._activePolls);
             }
-
             return _data;
         }
 
         public async Task PollAsync(bool force = false)
         {
-
             if (IsPolling)
                 return ;
 

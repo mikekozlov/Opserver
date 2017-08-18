@@ -46,34 +46,35 @@ namespace Opserver.Test.Core
         {
             if (Interlocked.CompareExchange(ref _isPolling, 1, 0) == 1)
             {
-                // already started poll by another thread
-                Current.Logger.Trace($"Node Poll [{Key}] Already Polling.");
+                // already started poll by another thread or it is still in progress
+                // Current.Logger.Trace($"Node Poll [{Key}] Already Polling.");
                 return;
             }
 
             try
             {
-                Current.Logger.Trace($"Node Poll [{Key}] Started.");
+                //Current.Logger.Trace($"Node Poll [{Key}] Started.");
                 CurrentPollDuration = new Stopwatch();
                 CurrentPollDuration.Start();
-
-
+                
                 // tasks are executed immediatelly when added, possibly because of async methods inside.
                 // yes because of async methods.
                 // try to simulate on 
-                var tasks = new List<Task>();
+                
+                //var tasks = new List<Task>();
                 //Parallel.ForEach(DataPollers, (poller) => tasks.Add(poller.PollGenericAsync()));
 
                 // here, can be foreach instead of parallel.Foreach
-                Parallel.ForEach(CachePollers, (poller) => tasks.Add(poller.PollGenericAsync()));
+                // no we can not, because asyn nature means threads are reused, but it still wait to move to next item
+                // before previous is finished
+                //Parallel.ForEach(CachePollers, (poller) => tasks.Add(poller.PollGenericAsync()));
 
-                //var tasks = CachePollers.Select(cp => cp.PollGenericAsync());
+                var tasks = CachePollers.Select(cp => cp.PollGenericAsync());
 
                 if (!tasks.Any())
                     return;
 
                 Current.Logger.Trace($"Node Poll [{Key}] about to enter Task.WhenAll.");
-
                 await Task.WhenAll(tasks.ToArray());
                 Current.Logger.Trace($"Node Poll [{Key}] Completed.");
             }

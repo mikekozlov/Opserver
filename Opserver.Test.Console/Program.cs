@@ -24,7 +24,7 @@ namespace Opserver.Test.Console
                 IEnumerable<Candidate> candidates =
                     await
                         connection.QueryAsync<Candidate>(
-                            "SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate WHERE CandidateId > 3490");
+                            "SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate WHERE CandidateId > 3490 and CandidateId <=8336");
                 return candidates;
             };
 
@@ -41,11 +41,12 @@ namespace Opserver.Test.Console
             while (true)
             {
                 Thread.Sleep(4000);
-                //var c = sqlNode.Candidates.Data.First();
 
-                //Console.WriteLine($"Global Pollers Candidate: {c.FullName} [{c.Id}]");
+                // initial call will go to db directly.
+                var c = sqlNode.Candidates.Data.First();
+                Console.WriteLine($"Global Pollers Candidate: {c.FullName} [{c.Id}]");
 
-                var cache = sqlNode.GetSqlCacheExt(
+                var cache = sqlNode.AddCachePoller(
                     nameof(Candidate) + "other key A",
                     "Get candidates with filters",
                     candidatesFiltersFunc,
@@ -56,7 +57,7 @@ namespace Opserver.Test.Console
 
                 Console.WriteLine($"Cache Pollers Candidate {cache.Key} {d}  Hit Count: {cache.HitCount}");
 
-                var cache2 = sqlNode.GetSqlCacheExt(
+                var cache2 = sqlNode.AddCachePoller(
                     nameof(Candidate) + "other key AA",
                     "Get candidates with filters",
                     candidatesFiltersFunc,
@@ -71,33 +72,31 @@ namespace Opserver.Test.Console
                 // because of smart algo in cache item itself, it is fine to declare duration, hitcount with default values
                 // wiht cqs approach call to sqlNode.GetSqlCacheExt will be done in query; the sql statement will be in query itself
                 // business logic will be done in query
-                var cache3 = sqlNode.GetSqlCacheExt(
-                            nameof(Candidate) + "other key AAA",
-                            "Get candidates with filters",
-                            // here some manipulations , mapping and multiple queries can be done.
-                            async connection => await
-                                                    connection.QueryAsync<Candidate>(
-                                                        "SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate WHERE CandidateId > 3490"),
-                            20.Seconds(),
-                            15);
 
-                var d3 = cache3.Data.First().FullName;
+                //var cache3 = sqlNode.GetSqlCacheExt(
+                //            nameof(Candidate) + "other key AAA",
+                //            "Get candidates with filters",
+                //            // here some manipulations , mapping and multiple queries can be done.
+                //            async connection => await
+                //                                    connection.QueryAsync<Candidate>(
+                //                                        "SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate WHERE CandidateId > 3490"),
+                //            20.Seconds(),
+                //            15);
 
-                Console.WriteLine($"Cache Pollers Candidate 2 {cache3.Key} {d3} Hit Count: {cache3.HitCount}");
+                //var d3 = cache3.Data.Last().FullName;
 
-
+                //Console.WriteLine($"Cache Pollers Candidate 2 {cache3.Key} {d3} Hit Count: {cache3.HitCount}");
 
                 for (int i = 0; i < 100; i++)
                 {
-                    sqlNode.GetSqlCacheExt(
-            nameof(Candidate) + "other key AAA" + i,
-            "Get candidates with filters",
-            // here some manipulations , mapping and multiple queries can be done.
-            async connection => await
-                                    connection.QueryAsync<Candidate>(
-                                        "SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate WHERE CandidateId > 3490"),
-                        20.Seconds(),
-                        15);
+                    sqlNode.AddCachePoller(
+                nameof(Candidate) + "A " + i,
+                "Get candidates with filters",
+                async connection => await
+                                        connection.QueryAsync<Candidate>(
+                                            "SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate WHERE CandidateId > 3490"),
+                            20.Seconds(),
+                            15);
                 }
             }
         }

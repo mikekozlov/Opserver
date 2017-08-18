@@ -82,7 +82,7 @@ namespace Opserver.Test.Core
 
         private static void PollAndForget()
         {
-            Current.Logger.Trace("Global polling started");
+            //Current.Logger.Trace("Global polling started");
 
             foreach (var pollNode in _pollsNodes)
             {
