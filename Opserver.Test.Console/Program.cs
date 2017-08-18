@@ -40,7 +40,7 @@ namespace Opserver.Test.Console
 
             while (true)
             {
-                Thread.Sleep(1000);
+                Thread.Sleep(4000);
                 //var c = sqlNode.Candidates.Data.First();
 
                 //Console.WriteLine($"Global Pollers Candidate: {c.FullName} [{c.Id}]");
@@ -84,6 +84,21 @@ namespace Opserver.Test.Console
                 var d3 = cache3.Data.First().FullName;
 
                 Console.WriteLine($"Cache Pollers Candidate 2 {cache3.Key} {d3} Hit Count: {cache3.HitCount}");
+
+
+
+                for (int i = 0; i < 100; i++)
+                {
+                    sqlNode.GetSqlCacheExt(
+            nameof(Candidate) + "other key AAA" + i,
+            "Get candidates with filters",
+            // here some manipulations , mapping and multiple queries can be done.
+            async connection => await
+                                    connection.QueryAsync<Candidate>(
+                                        "SELECT distinct top 10\r\n\tCandidateId as Id, \r\n\tEmail, \r\n\tLastName as FullName\r\n FROM AS_Gold_Stage.JobDiva.Candidate WHERE CandidateId > 3490"),
+                        20.Seconds(),
+                        15);
+                }
             }
         }
     }

@@ -64,10 +64,15 @@ namespace Opserver.Test.Core
                 var tasks = new List<Task>();
                 //Parallel.ForEach(DataPollers, (poller) => tasks.Add(poller.PollGenericAsync()));
 
+                // here, can be foreach instead of parallel.Foreach
                 Parallel.ForEach(CachePollers, (poller) => tasks.Add(poller.PollGenericAsync()));
+
+                //var tasks = CachePollers.Select(cp => cp.PollGenericAsync());
 
                 if (!tasks.Any())
                     return;
+
+                Current.Logger.Trace($"Node Poll [{Key}] about to enter Task.WhenAll.");
 
                 await Task.WhenAll(tasks.ToArray());
                 Current.Logger.Trace($"Node Poll [{Key}] Completed.");

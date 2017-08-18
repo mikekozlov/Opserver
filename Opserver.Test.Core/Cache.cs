@@ -77,6 +77,8 @@ namespace Opserver.Test.Core
                 return _data;
             }
 
+            await Task.Delay(millisecondsDelay: 3000);
+
             Interlocked.Increment(ref PollEngine._activePolls);
 
             PollStatus = "Awaiting Semaphore";
@@ -134,13 +136,15 @@ namespace Opserver.Test.Core
 
         public async Task PollAsync(bool force = false)
         {
+
             if (IsPolling)
                 return ;
 
-            if (force || (_hasData == 0 && Interlocked.CompareExchange(ref _hasData, 1, 0) == 0))
-            {
-                 await UpdateAsync();
-            }
+            //todo must mean something, currently not hit, 
+            //if (force || (_hasData == 0 && Interlocked.CompareExchange(ref _hasData, 1, 0) == 0))
+            //{
+            //     await UpdateAsync();
+            //}
 
             await UpdateAsync();
         }
